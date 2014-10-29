@@ -8,9 +8,13 @@
 import operator
 import sys
 import os
+import datetime
 
 def clean(s):
     return s.replace('\n', '').replace('\r', '')
+
+def read_date(s):
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
 
 def read_data_from_users_file(data_dir):
     path = os.path.join(data_dir, 'users.tsv') 
@@ -73,6 +77,41 @@ def read_data_from_users2(data_dir):
         users2[int(u)] = u
     return users2
 
+def get_t2_jobs(jobs, t2_cutoff):
+    t2_jobs = {}
+
+    for j_id in jobs:
+        if read_date(jobs[j_id][-1][:19]) >= t2_cutoff:
+            t2_jobs[j_id] = jobs[j_id]
+    return t2_jobs
+
+def dist_users2_jobs(users, users2, t2_jobs):
+    """
+        same city = 1, same state = 0.5, same country = 0.3
+    """
+    users2_t2_jobs = {}
+
+    count = 0
+    for u_id in users2:
+        for j_id in t2_jobs:
+            count += 1
+
+            score = 0
+            user_details = users[u_id]
+            job_details = t2_jobs[j_id]
+
+            if (user_details[1] + "_" + user_details[2] + "_" + user_details[3]) == (job_details[4] + "_" + job_details[5] + "_" + job_details[6]):
+                score = 1
+            elif (user_details[2] + "_" + user_details[3]) == (job_details[5] + "_" + job_details[6]):
+                score = 0.5
+            elif (user_details[3]) == (job_details[6]):
+                score = 0.3
+
+            if score > 0:
+                users2_t2_jobs[(u_id, j_id)] = score 
+            print count, score, user_details[1] + "_" + user_details[2] + "_" + user_details[3], job_details[4] + "_" + job_details[5] + "_" + job_details[6]
+    return users2_t2_jobs
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print 'Please use the syntax: python bhoopalam.p27.py <path to data directory> <path to output file>'
@@ -87,8 +126,19 @@ if __name__ == '__main__':
     user_history = read_data_from_user_history(data_dir)
     users2 = read_data_from_users2(data_dir)
 
-    print 'users', len(users)
-    print 'apps', len(apps)
+    t2_cutoff = read_date("2012-04-09 00:00:00")
+
+    t2_jobs = get_t2_jobs(jobs, t2_cutoff)
+
+    #print "jobs len", len(jobs)
+    print "t2 jobs len", len(t2_jobs)
+
+    users2_jobs = dist_users2_jobs(users, users2, t2_jobs) 
+
+    print "users2_jobs len", len(users2_jobs)
+
+    #print 'users', len(users)
+    #print 'apps', len(apps)
     print 'jobs', len(jobs)
-    print 'user_history', len(user_history)
+    #print 'user_history', len(user_history)
     print 'users2', len(users2)
