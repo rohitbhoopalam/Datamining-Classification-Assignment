@@ -85,10 +85,22 @@ def get_t2_jobs(jobs, t2_cutoff):
             t2_jobs[j_id] = jobs[j_id]
     return t2_jobs
 
+def get_location_score(user_details, job_details):
+    """
+        same city = 0.230, same state = 0.608, same country = 0.156
+    """
+    score = 0.0056
+
+    if (user_details[1] + "_" + user_details[2] + "_" + user_details[3]) == (job_details[4] + "_" + job_details[5] + "_" + job_details[6]):
+        score = 0.230
+    elif (user_details[2] + "_" + user_details[3]) == (job_details[5] + "_" + job_details[6]):
+        score = 0.608
+    elif (user_details[3]) == (job_details[6]):
+        score = 0.156
+
+    return score
+
 def dist_users2_jobs(users, users2, t2_jobs):
-    """
-        same city = 1, same state = 0.5, same country = 0.3
-    """
     users2_t2_jobs = {}
 
     count = 0
@@ -96,21 +108,19 @@ def dist_users2_jobs(users, users2, t2_jobs):
         for j_id in t2_jobs:
             count += 1
 
-            score = 0
             user_details = users[u_id]
             job_details = t2_jobs[j_id]
 
-            if (user_details[1] + "_" + user_details[2] + "_" + user_details[3]) == (job_details[4] + "_" + job_details[5] + "_" + job_details[6]):
-                score = 1
-            elif (user_details[2] + "_" + user_details[3]) == (job_details[5] + "_" + job_details[6]):
-                score = 0.5
-            elif (user_details[3]) == (job_details[6]):
-                score = 0.3
+            location_score = get_location_score(user_details, job_details)
 
-            if score > 0:
-                users2_t2_jobs[(u_id, j_id)] = score 
-            print count, score, user_details[1] + "_" + user_details[2] + "_" + user_details[3], job_details[4] + "_" + job_details[5] + "_" + job_details[6]
+            users2_t2_jobs[(u_id, j_id)] = location_score  
+
+            print count, location_score, user_details[1] + "_" + user_details[2] + "_" + user_details[3], job_details[4] + "_" + job_details[5] + "_" + job_details[6]
     return users2_t2_jobs
+
+def print_result(users2_t2_jobs):
+    for (user_job, score) in users2_t2_jobs:
+        print user_job[0], user_job[1], score
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
@@ -133,9 +143,11 @@ if __name__ == '__main__':
     #print "jobs len", len(jobs)
     print "t2 jobs len", len(t2_jobs)
 
-    users2_jobs = dist_users2_jobs(users, users2, t2_jobs) 
+    users2_t2_jobs = dist_users2_jobs(users, users2, t2_jobs) 
 
-    print "users2_jobs len", len(users2_jobs)
+    final_150 = sorted(users2_t2_jobs.items(), key= lambda x: x[1], reverse=True)[:150]
+
+    print_result(final_150)
 
     #print 'users', len(users)
     #print 'apps', len(apps)
