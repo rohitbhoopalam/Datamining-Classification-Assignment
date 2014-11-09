@@ -75,6 +75,7 @@ def read_data_from_users2(data_dir):
     for u in users_file:
         u = clean(u)
         users2[int(u)] = u
+
     return users2
 
 def get_t2_jobs(jobs, t2_cutoff):
@@ -113,14 +114,18 @@ def dist_users2_jobs(users, users2, t2_jobs):
 
             location_score = get_location_score(user_details, job_details)
 
-            users2_t2_jobs[(u_id, j_id)] = location_score  
+            if location_score > 0.2:
+                users2_t2_jobs[(u_id, j_id)] = location_score  
 
-            print count, location_score, user_details[1] + "_" + user_details[2] + "_" + user_details[3], job_details[4] + "_" + job_details[5] + "_" + job_details[6]
+            #print count
+            #print count, location_score, user_details[1] + "_" + user_details[2] + "_" + user_details[3], job_details[4] + "_" + job_details[5] + "_" + job_details[6]
     return users2_t2_jobs
 
-def print_result(users2_t2_jobs):
+def write_result(users2_t2_jobs):
+    f = open(sys.argv[2], 'w')
     for (user_job, score) in users2_t2_jobs:
-        print user_job[0], user_job[1], score
+        f.write("%s\t%s\n" %(user_job[0], user_job[1]))
+    f.close()
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
@@ -128,7 +133,6 @@ if __name__ == '__main__':
         exit()
 
     data_dir = sys.argv[1]
-    output_file = open(sys.argv[2], 'w')
 
     users = read_data_from_users_file(data_dir)
     apps = read_data_from_apps_file(data_dir)
@@ -141,16 +145,18 @@ if __name__ == '__main__':
     t2_jobs = get_t2_jobs(jobs, t2_cutoff)
 
     #print "jobs len", len(jobs)
-    print "t2 jobs len", len(t2_jobs)
+    #print "t2 jobs len", len(t2_jobs)
 
     users2_t2_jobs = dist_users2_jobs(users, users2, t2_jobs) 
 
+    #print len(users2_t2_jobs)
+    #raw_input()
     final_150 = sorted(users2_t2_jobs.items(), key= lambda x: x[1], reverse=True)[:150]
 
-    print_result(final_150)
+    write_result(final_150)
 
     #print 'users', len(users)
     #print 'apps', len(apps)
-    print 'jobs', len(jobs)
+    #print 'jobs', len(jobs)
     #print 'user_history', len(user_history)
-    print 'users2', len(users2)
+    #print 'users2', len(users2)
