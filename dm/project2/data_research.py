@@ -9,6 +9,7 @@ import operator
 import sys
 import os
 import datetime
+from nltk.stem import PorterStemmer
 
 def clean(s):
     return s.replace('\n', '').replace('\r', '')
@@ -158,6 +159,28 @@ def find_old_user2_apps_count(apps_by_users, users2):
 
     print count, len(users2), len(ids)
 
+def find_unique_job_positions(jobs):
+    stemmer = PorterStemmer()
+
+    unique_titles = {}
+    for job_id in jobs:
+        job_title = jobs[job_id][1]
+
+        try:
+            job_title_stemmed = stemmer.stem(job_title).split()
+        except UnicodeDecodeError:
+            job_title_stemmed = job_title.split()
+        job_title = " ".join(sorted(job_title_stemmed))
+
+        try:
+            unique_titles[job_title] += 1
+        except KeyError:
+            unique_titles[job_title] = 1
+
+    print "unique positions = %s" %str(len(unique_titles.keys()))
+    raw_input()
+    print unique_titles
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print 'Please use the syntax: python bhoopalam.p27.py <path to data directory> <path to output file>'
@@ -166,12 +189,13 @@ if __name__ == '__main__':
     data_dir = sys.argv[1]
     output_file = open(sys.argv[2], 'w')
 
-    users = read_data_from_users_file(data_dir)
-    apps = read_data_from_apps_file(data_dir)
+    #users = read_data_from_users_file(data_dir)
+    #apps = read_data_from_apps_file(data_dir)
     jobs = read_data_from_jobs_file(data_dir)
     #user_history = read_data_from_user_history(data_dir)
-    apps_by_users = read_data_from_apps_file_by_user(data_dir)
-    users2 = read_data_from_users2(data_dir)
+    #apps_by_users = read_data_from_apps_file_by_user(data_dir)
+    #users2 = read_data_from_users2(data_dir)
 
     #find_location_similarity(apps, users, jobs)
-    find_old_user2_apps_count(apps_by_users, users2)
+    #find_old_user2_apps_count(apps_by_users, users2)
+    find_unique_job_positions(jobs)
