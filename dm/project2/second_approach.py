@@ -10,7 +10,6 @@ import sys
 import os
 import datetime
 import re
-from nltk.stem import PorterStemmer
 
 def clean(s):
     return s.replace('\n', '').replace('\r', '')
@@ -151,7 +150,6 @@ def write_result(users2_t2_jobs, to_be_removed):
 
 def get_users_features(users, user_history):
     users_features = {}
-    stemmer = PorterStemmer()
 
     for u_id in users:
         (user_id, city, state, country, zip_code, degree, major, grad_date, work_history_count,\
@@ -162,17 +160,11 @@ def get_users_features(users, user_history):
         country = country.lower()
 
         degree = degree.lower().split()
-        try:
-            degree = [stemmer.stem(t.lower()) for t in degree]
-        except UnicodeDecodeError:
-            degree = [t.lower() for t in degree]
+        degree = [t.lower() for t in degree]
         degree = set(degree)
 
         major = major.lower().split()
-        try:
-            major = [stemmer.stem(t.lower()) for t in major]
-        except UnicodeDecodeError:
-            major = [t.lower() for t in major]
+        major = [t.lower() for t in major]
         major = set(major)
 
         try:
@@ -183,10 +175,7 @@ def get_users_features(users, user_history):
         try:
             current_job_title = user_history[(u_id, int(work_history_count))][-1]
             current_job_title = " ".join(re.findall(r'(\w+)', current_job_title))
-            try:
-                current_job_title = [stemmer.stem(t.lower()) for t in current_job_title.split()]
-            except UnicodeDecodeError:
-                current_job_title = [t.lower() for t in current_job_title.split()]
+            current_job_title = [t.lower() for t in current_job_title.split()]
             current_job_title = set(current_job_title)
         except KeyError:
             current_job_title = set()
@@ -199,10 +188,7 @@ def get_users_features(users, user_history):
             pass
 
         old_job_titles = " ".join(re.findall(r'(\w+)', old_job_titles))
-        try:
-            old_job_titles = [stemmer.stem(t.lower()) for t in old_job_titles.split()]
-        except UnicodeDecodeError:
-            old_job_titles = [t.lower() for t in old_job_titles.split()]
+        old_job_titles = [t.lower() for t in old_job_titles.split()]
 
         old_job_titles = set(old_job_titles)
 
@@ -240,44 +226,44 @@ def numeric_similarity_managed(n1, n2):
     return (1100 - d)/1100.0
 
 
-def get_similarity_score(u2_user, user):
-    (u2_city, u2_state, u2_country, u2_degree, u2_major, u2_grad_year, u2_work_history_count,\
-            u2_total_exp, u2_currently_emp, u2_managed_others, u2_managed_howmany, u2_current_job_title, u2_old_job_titles) = u2_user
-    (city, state, country, degree, major, grad_year, work_history_count,\
-            total_exp, currently_emp, managed_others, managed_howmany, current_job_title, old_job_titles) = user
-
-    city_score = state_score = country_score = 1
-    if u2_city == city:
-        city_score = 1
-    if u2_state == state:
-        state_score = 1
-    if u2_country == country:
-        country_score = 1
-
-    degree_score = 2 if u2_degree == degree and degree else 0
-    major_score = 3 if u2_major == major and major else 0
-
-    degree_score = jaccard(u2_degree, degree)
-    major_score = jaccard(u2_major, major)
-
-    grad_year_score = numeric_similarity(u2_grad_year, grad_year)
-    work_history_count_score = numeric_similarity(u2_work_history_count, work_history_count)
-
-    total_exp_score = numeric_similarity(u2_total_exp, total_exp)
-    currently_emp_score = 1 if u2_currently_emp == currently_emp else 0.1
-
-    managed_others_score = 1 if u2_managed_others == managed_others else 0.1
-    managed_howmany_score = numeric_similarity_managed(u2_managed_howmany, managed_howmany)
-    #print managed_howmany_score, u2_managed_howmany, managed_howmany
-
-    current_job_title_score = jaccard(u2_current_job_title, current_job_title)
-    old_job_titles_score = jaccard(u2_old_job_titles, old_job_titles)
-
-    location_score = 1.4*city_score+1.2*state_score+0.7*country_score
-    #location_score = city_score+state_score+country_score
-
-    return current_job_title_score * degree_score * major_score * old_job_titles_score * (location_score * total_exp_score * managed_others_score * grad_year_score * work_history_count_score * currently_emp_score * managed_howmany_score)
-
+#def get_similarity_score(u2_user, user):
+#    (u2_city, u2_state, u2_country, u2_degree, u2_major, u2_grad_year, u2_work_history_count,\
+#            u2_total_exp, u2_currently_emp, u2_managed_others, u2_managed_howmany, u2_current_job_title, u2_old_job_titles) = u2_user
+#    (city, state, country, degree, major, grad_year, work_history_count,\
+#            total_exp, currently_emp, managed_others, managed_howmany, current_job_title, old_job_titles) = user
+#
+#    city_score = state_score = country_score = 1
+#    if u2_city == city:
+#        city_score = 1
+#    if u2_state == state:
+#        state_score = 1
+#    if u2_country == country:
+#        country_score = 1
+#
+#    degree_score = 2 if u2_degree == degree and degree else 0
+#    major_score = 3 if u2_major == major and major else 0
+#
+#    degree_score = jaccard(u2_degree, degree)
+#    major_score = jaccard(u2_major, major)
+#
+#    grad_year_score = numeric_similarity(u2_grad_year, grad_year)
+#    work_history_count_score = numeric_similarity(u2_work_history_count, work_history_count)
+#
+#    total_exp_score = numeric_similarity(u2_total_exp, total_exp)
+#    currently_emp_score = 1 if u2_currently_emp == currently_emp else 0.1
+#
+#    managed_others_score = 1 if u2_managed_others == managed_others else 0.1
+#    managed_howmany_score = numeric_similarity_managed(u2_managed_howmany, managed_howmany)
+#    #print managed_howmany_score, u2_managed_howmany, managed_howmany
+#
+#    current_job_title_score = jaccard(u2_current_job_title, current_job_title)
+#    old_job_titles_score = jaccard(u2_old_job_titles, old_job_titles)
+#
+#    location_score = 1.4*city_score+1.2*state_score+0.7*country_score
+#    #location_score = city_score+state_score+country_score
+#
+#    return current_job_title_score * degree_score * major_score * old_job_titles_score * (location_score * total_exp_score * managed_others_score * grad_year_score * work_history_count_score * currently_emp_score * managed_howmany_score)
+#
 #def get_similarity_score(u2_user, user):
 #    (u2_city, u2_state, u2_country, u2_degree, u2_major, u2_grad_year, u2_work_history_count,\
 #            u2_total_exp, u2_currently_emp, u2_managed_others, u2_managed_howmany, u2_current_job_title, u2_old_job_titles) = u2_user
@@ -316,19 +302,251 @@ def get_similarity_score(u2_user, user):
 #
 #    return current_job_title_score * degree_score * major_score * old_job_titles_score * (location_score * total_exp_score * managed_others_score * grad_year_score * work_history_count_score * currently_emp_score * managed_howmany_score)
 #
+
+def get_probability_weighting(user_ids, users_features):
+    city_feature = {}
+    state_feature = {}
+    country_feature = {}
+    current_job_title_feature = {}
+    degree_feature = {}
+    major_feature = {}
+    total_exp_feature = {}
+    managed_others_feature = {}
+    grad_year_feature = {}
+    work_history_feature = {}
+    currently_emp_feature = {}
+    managed_howmany_feature = {}
+
+    for u_id in user_ids:
+        user_details = users_features[u_id] 
+
+        (city, state, country, degree, major, grad_year, work_history_count,\
+            total_exp, currently_emp, managed_others, managed_howmany, current_job_title, old_job_titles) = user_details
+
+        try:
+            city_feature[city] += 1
+        except KeyError:
+            city_feature[city] = 1
+
+        try:
+            state_feature[state] += 1
+        except KeyError:
+            state_feature[state] = 1
+
+        try:
+            country_feature[country] += 1
+        except KeyError:
+            country_feature[country] = 1
+
+        #try:
+        #    degree_feature[degree] += 1
+        #except KeyError:
+        #    degree_feature[degree] = 1
+
+        #try:
+        #    major_feature[major] += 1
+        #except KeyError:
+        #    major_feature[major] = 1
+
+        try:
+            total_exp_feature[total_exp] += 1
+        except KeyError:
+            total_exp_feature[total_exp] = 1
+        
+        try:
+            managed_others_feature[managed_others] += 1
+        except KeyError:
+            managed_others_feature[managed_others] = 1
+        
+        try:
+            grad_year_feature[grad_year] += 1
+        except KeyError:
+            grad_year_feature[grad_year] = 1
+
+        try:
+            work_history_feature[work_history_count] += 1
+        except KeyError:
+            work_history_feature[work_history_count] = 1
+
+        try:
+            currently_emp_feature[currently_emp] += 1
+        except KeyError:
+            currently_emp_feature[currently_emp] = 1
+
+        try:
+            managed_howmany_feature[managed_howmany] += 1
+        except KeyError:
+            managed_howmany_feature[managed_howmany] = 1
+                
+        current_job_title_feature = 1
+
+    return (city_feature, state_feature, country_feature, current_job_title_feature, degree_feature,\
+            major_feature, total_exp_feature, managed_others_feature, grad_year_feature\
+            , work_history_feature, currently_emp_feature, managed_howmany_feature)
+
+
+def can_use_feature(d):
+    highest = 0
+    count = 0
+    for k in d:
+        v = d[k]
+        count += v
+        if v > highest:
+            highest = v
+
+    return float(count) > 0 and highest/float(count) > 0.85
+
+
+def get_similarity_score(user_ids, u2_id, users_features, probabilities):
+    similarity_score = 0 
+    total_features_used = 14
+    
+    major_score = degree_score = old_job_titles_score = current_job_title_score = 0
+    user2 = users_features[u2_id]
+
+    (u2_city, u2_state, u2_country, u2_degree, u2_major, u2_grad_year, u2_work_history_count,\
+            u2_total_exp, u2_currently_emp, u2_managed_others, u2_managed_howmany, u2_current_job_title, u2_old_job_titles) = user2
+
+    (city_feature, state_feature, country_feature, current_job_title_feature, degree_feature,\
+            major_feature, total_exp_feature, managed_others_feature, grad_year_feature\
+            , work_history_feature, currently_emp_feature, managed_howmany_feature) = probabilities
+
+    for u_id in user_ids:
+        user = users_features[u_id]
+        (city, state, country, degree, major, grad_year, work_history_count,\
+            total_exp, currently_emp, managed_others, managed_howmany, current_job_title, old_job_titles) = user
+        
+        major_score += jaccard(major, u2_major)
+        degree_score += jaccard(degree, u2_degree)
+        old_job_titles_score += jaccard(old_job_titles, u2_old_job_titles)
+        current_job_title_score += jaccard(current_job_title, u2_current_job_title)
+
+    user_ids_len = float(len(user_ids))
+    major_score /= user_ids_len
+    degree_score /= user_ids_len
+    old_job_titles_score /= user_ids_len
+    current_job_title_score /= user_ids_len
+
+    try:
+        if can_use_feature(city_feature):
+            city_score = city_feature[u2_city] / user_ids_len
+            print 'city'
+        else:
+            total_features_used -= 1
+            city_score = 0
+    except KeyError:
+        city_score = 0
+
+    try:
+        if can_use_feature(state_feature):
+            state_score = state_feature[u2_state] / user_ids_len
+            print 'state'
+        else:
+            state_score = 0
+            total_features_used -= 1
+    except KeyError:
+        state_score = 0
+
+    try:
+        if can_use_feature(country_feature):
+            country_score = country_feature[u2_country] / user_ids_len
+            print 'country'
+        else:
+            country_score = 0
+            total_features_used -= 1
+    except KeyError:
+        country_score= 0
+
+    #try:
+    #    degree_score = degree_feature[u2_degree] / user_ids_len
+    #except KeyError:
+    #    degree_score = 0.1
+
+    #try:
+    #    major_score = major_feature[u2_major] / user_ids_len
+    #except KeyError:
+    #    major_score = 0.1
+
+    try:
+        if can_use_feature(grad_year_feature):
+            grad_year_score = grad_year_feature[u2_grad_year] / user_ids_len
+            print 'grad_year'
+        else:
+            grad_year_score = 0
+            total_features_used -= 1
+    except KeyError:
+        grad_year_score = 0
+
+    try:
+        if can_use_feature(work_history_feature):
+            work_history_count_score = work_history_feature[u2_work_history_count] / user_ids_len
+            print 'work_history_count'
+        else:
+            work_history_count_score = 0
+            total_features_used -= 1
+    except KeyError:
+        work_history_count_score = 0
+
+    try:
+        if can_use_feature(total_exp_feature):
+            total_exp_score = total_exp_feature[u2_total_exp] / user_ids_len
+            print 'total_exp'
+        else:
+            total_exp_score = 0
+            total_features_used -= 1
+    except KeyError:
+        total_exp_score = 0
+
+    try:
+        if can_use_feature(currently_emp_feature):
+            currently_emp_score = currently_emp_feature[u2_currently_emp] / user_ids_len
+        else:
+            currently_emp_score = 0
+            total_features_used -= 1
+    except KeyError:
+        currently_emp_score = 0
+
+    try:
+        if can_use_feature(managed_others_feature):
+           managed_others_score = managed_others_feature[u2_managed_others] / user_ids_len
+        else:
+            managed_others_score = 0
+            total_features_used -= 1
+    except KeyError:
+        managed_others_score = 0
+
+    try:
+        if can_use_feature(managed_howmany_feature):
+            managed_howmany_score = managed_howmany_feature[u2_managed_howmany] / user_ids_len
+        else:
+            managed_howmany_score = 0
+            total_features_used -= 1
+    except KeyError:
+        managed_howmany_score = 0
+    
+    #try:
+    #    current_job_title_score = current_job_title_feature / user_ids_len
+    #except KeyError:
+    #    current_job_title_score = 0.1
+
+    #current_job_title_score = degree_score = major_score = 1
+
+    location_score = (city_score + state_score + country_score) 
+    #similarity_score = old_job_titles_score + degree_score + major_score + current_job_title_score + total_exp_score + location_score + grad_year_score + work_history_count_score + currently_emp_score + managed_others_score + managed_howmany_score
+    print total_features_used
+    similarity_score = (old_job_titles_score + degree_score + major_score + current_job_title_score + location_score + total_exp_score + location_score + grad_year_score + work_history_count_score + currently_emp_score + managed_others_score + managed_howmany_score)/float(total_features_used)
+    return similarity_score
+
 def get_similar_users(user_ids, users2, users_features, k):
     similar_user_ids = {}
     
     user2_similarity = {} 
 
+    probabilities = get_probability_weighting(user_ids, users_features)
+
     for u2_id in users2:
-        u2_user = users_features[u2_id]
-
-        for u_id in user_ids:
-            user_details = users_features[u_id]
-
-            similarity_score = get_similarity_score(u2_user, user_details)
-            similar_user_ids[(u2_id, u_id)] = similarity_score
+        similarity_score = get_similarity_score(user_ids, u2_id, users_features, probabilities)
+        similar_user_ids[u2_id] = similarity_score
 
         similar_users = sorted(similar_user_ids.items(), key=lambda x: x[1], reverse=True)
 
@@ -347,8 +565,8 @@ def predict_jobs_for_users(users2, users_features, apps_t2_jobs, jobs, k):
     for j_id in apps_t2_jobs:
         user_ids = apps_t2_jobs[j_id]
         similar_users = get_similar_users(user_ids, users2, users_features, k)
-        for (u2_id, u_id) in similar_users:
-            new_score = similar_users[(u2_id, u_id)] 
+        for u2_id in similar_users:
+            new_score = similar_users[u2_id] 
             try:
                 old_score = predictions[(u2_id, j_id)]
             except KeyError:
@@ -382,12 +600,19 @@ if __name__ == '__main__':
     users2 = []
     count = 0
     to_be_removed = []
+    temp = {}
     for u in apps:
-        if count > 100:
-            break
-        count += 1
-        to_be_removed.append(u)
-        users2.append(u[0])
+        try:
+            t = temp[u[1]]
+            if count < 50 and len(t)>5:
+                count += 1
+                to_be_removed.append(u)
+                users2.append(u[0])
+                print u
+                continue
+            t.append(u[0])
+        except KeyError:
+            temp[u[1]] = [u[0]]
         #print users2
 
     for u in to_be_removed:
@@ -395,10 +620,9 @@ if __name__ == '__main__':
 
     users_features = get_users_features(users, user_history)
 
-
     apps_t2_jobs = find_apps_with_j2_jobs(apps, jobs, t2_cutoff)
 
-    k = 3
+    k = 10
 
     predictions = predict_jobs_for_users(users2, users_features, apps_t2_jobs, jobs, k)
 
@@ -409,6 +633,7 @@ if __name__ == '__main__':
     accuracy = find_accuracy(final_150, to_be_removed) 
     while accuracy < 5:
         print k, accuracy
+        exit()
         k += 20
 
         predictions = predict_jobs_for_users(users2, users_features, apps_t2_jobs, jobs, k)
