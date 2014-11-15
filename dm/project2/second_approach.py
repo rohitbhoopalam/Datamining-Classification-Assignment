@@ -161,11 +161,13 @@ def get_users_features(users, user_history):
 
         degree = degree.lower().split()
         degree = [t.lower() for t in degree]
-        degree = set(degree)
+        degree = " ".join(degree)
+        #degree = set(degree)
 
         major = major.lower().split()
         major = [t.lower() for t in major]
-        major = set(major)
+        major = " ".join(degree)
+        #major = set(major)
 
         try:
             grad_year = int(grad_date[:4])
@@ -176,9 +178,11 @@ def get_users_features(users, user_history):
             current_job_title = user_history[(u_id, int(work_history_count))][-1]
             current_job_title = " ".join(re.findall(r'(\w+)', current_job_title))
             current_job_title = [t.lower() for t in current_job_title.split()]
-            current_job_title = set(current_job_title)
+            #current_job_title = set(current_job_title)
+            current_job_title = " ".join(current_job_title)
         except KeyError:
-            current_job_title = set()
+            #current_job_title = set()
+            current_job_title = ''
 
         old_job_titles = ""
         try:
@@ -416,16 +420,16 @@ def get_similarity_score(user_ids, u2_id, users_features, probabilities):
         (city, state, country, degree, major, grad_year, work_history_count,\
             total_exp, currently_emp, managed_others, managed_howmany, current_job_title, old_job_titles) = user
         
-        major_score += jaccard(major, u2_major)
-        degree_score += jaccard(degree, u2_degree)
+        #major_score += jaccard(major, u2_major)
+        #degree_score += jaccard(degree, u2_degree)
         old_job_titles_score += jaccard(old_job_titles, u2_old_job_titles)
-        current_job_title_score += jaccard(current_job_title, u2_current_job_title)
+        #current_job_title_score += jaccard(current_job_title, u2_current_job_title)
 
     user_ids_len = float(len(user_ids))
-    major_score /= user_ids_len
-    degree_score /= user_ids_len
+    #major_score /= user_ids_len
+    #degree_score /= user_ids_len
     old_job_titles_score /= user_ids_len
-    current_job_title_score /= user_ids_len
+    #current_job_title_score /= user_ids_len
 
     try:
         if can_use_feature(city_feature):
@@ -457,15 +461,23 @@ def get_similarity_score(user_ids, u2_id, users_features, probabilities):
     except KeyError:
         country_score= 0
 
-    #try:
-    #    degree_score = degree_feature[u2_degree] / user_ids_len
-    #except KeyError:
-    #    degree_score = 0.1
+    try:
+        if can_use_feature(degree_feature):
+            degree_score = degree_feature[u2_degree] / user_ids_len
+        else:
+            degree_score = 0
+            total_features_used -= 1
+    except KeyError:
+        degree_score = 0.1
 
-    #try:
-    #    major_score = major_feature[u2_major] / user_ids_len
-    #except KeyError:
-    #    major_score = 0.1
+    try:
+        if can_use_feature(major_feature):
+            major_score = major_feature[u2_major] / user_ids_len
+        else:
+            major_score = 0
+            total_features_used -= 1
+    except KeyError:
+        major_score = 0.1
 
     try:
         if can_use_feature(grad_year_feature):
@@ -524,10 +536,14 @@ def get_similarity_score(user_ids, u2_id, users_features, probabilities):
     except KeyError:
         managed_howmany_score = 0
     
-    #try:
-    #    current_job_title_score = current_job_title_feature / user_ids_len
-    #except KeyError:
-    #    current_job_title_score = 0.1
+    try:
+        if can_use_feature(currently_emp_feature):
+            current_job_title_score = current_job_title_feature / user_ids_len
+        else:
+            current_job_title_score = 0
+            total_features_used -= 1
+    except KeyError:
+        current_job_title_score = 0
 
     #current_job_title_score = degree_score = major_score = 1
 
@@ -582,6 +598,49 @@ def find_accuracy(final_150, to_be_removed):
             accuracy += 1
     return accuracy
 
+def find_apps_by_users(apps):
+    apps_by_users = {}
+
+    for (u_id, j_id) in apps:
+        try:
+            apps_by_users[u_id].append(j_id)
+        except KeyError:
+            apps_by_users[u_id] = [j_id]
+    return apps_by_users
+
+def get_job_similarity(j_id, jobs_applied_by_user, apps_t2_jobs):
+    jobs_applied_by_user = set(jobs_applied_by_user)
+
+    try:
+        users_applied_to_j_id = set(apps_t2_jobs[j_id])
+    except KeyError:
+        return 0
+
+    sim = 0
+
+    for _j_id in jobs_applied_by_user:
+        try:
+            users_applied_to__j_id = set(apps_t2_jobs[_j_id])
+        except KeyError:
+            users_applied_to__j_id = set([])
+        sim += len(users_applied_to_j_id.intersection(users_applied_to__j_id))
+
+    print "sim--------", sim
+    return sim
+
+def score_applications(predictions, apps_t2_jobs, apps_users):
+    _predictions = {}
+
+    for (u_id, j_id) in predictions: 
+        try:
+            jobs_applied_by_user = apps_users[u_id]
+        except KeyError:
+            jobs_applied_by_user = [] 
+
+        _predictions[(u_id, j_id)] = get_job_similarity(j_id, jobs_applied_by_user, apps_t2_jobs)
+
+    return _predictions
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         print 'Please use the syntax: python bhoopalam.p27.py <path to data directory> <path to output file>'
@@ -604,7 +663,7 @@ if __name__ == '__main__':
     for u in apps:
         try:
             t = temp[u[1]]
-            if count < 50 and len(t)>5:
+            if count < 10 and len(t)>10:
                 count += 1
                 to_be_removed.append(u)
                 users2.append(u[0])
@@ -621,12 +680,15 @@ if __name__ == '__main__':
     users_features = get_users_features(users, user_history)
 
     apps_t2_jobs = find_apps_with_j2_jobs(apps, jobs, t2_cutoff)
+    apps_users = find_apps_by_users(apps)
 
     k = 10
 
     predictions = predict_jobs_for_users(users2, users_features, apps_t2_jobs, jobs, k)
 
-    predicted_items = sorted(predictions.items(), key=lambda x: x[1][0]/float(x[1][1]), reverse=True)
+    predictions = score_applications(predictions, apps_t2_jobs, apps_users)
+
+    predicted_items = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
 
     final_150 = predicted_items[:150] 
 
@@ -637,8 +699,9 @@ if __name__ == '__main__':
         k += 20
 
         predictions = predict_jobs_for_users(users2, users_features, apps_t2_jobs, jobs, k)
+        predictions = score_applications(predictions, apps_t2_jobs, apps_users)
 
-        predicted_items = sorted(predictions.items(), key=lambda x: x[1][0]/float(x[1][1]), reverse=True)
+        predicted_items = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
 
         final_150 = predicted_items[:150] 
 
