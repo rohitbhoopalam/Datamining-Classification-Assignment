@@ -68,7 +68,7 @@ def read_data_from_user_history(user_history_file):
         user_history[(int(user_id), int(sequence))] = temp
     return user_history
 
-def read_data_from_users2(data_dir):
+def read_data_from_users2(data_dir, apps_users):
     path = os.path.join(data_dir, 'user2.tsv') 
     users_file = open(path, 'r')
 
@@ -77,7 +77,14 @@ def read_data_from_users2(data_dir):
         u = clean(u)
         users2.append(int(u))
 
-    return users2
+    users2_set = set(users2)
+
+    users2_small_set = set([])
+
+    for u_id in apps_users:
+        if u_id in users2_set and len(apps_users[u_id]) > 0:
+            users2_small_set.add(u_id)
+    return list(users2_small_set) 
 
 def get_t2_jobs(jobs, t2_cutoff):
     t2_jobs = {}
@@ -563,13 +570,14 @@ if __name__ == '__main__':
     jobs = read_data_from_jobs_file(data_dir)
     apps = read_data_from_apps_file(data_dir)
     user_history = read_data_from_user_history(data_dir)
-    users2 = read_data_from_users2(data_dir)
-    print "Reading data completed. Building the model"
 
     users_features = get_users_features(users, user_history)
 
     apps_t2_jobs = find_apps_with_j2_jobs(apps, jobs, t2_cutoff)
     apps_users = find_apps_by_users(apps)
+
+    users2 = read_data_from_users2(data_dir, apps_users)
+    print "Reading data completed. Building the model"
 
     k = 10
 
