@@ -439,13 +439,13 @@ def get_similar_users(user_ids, users2, users_features, k):
         similarity_score = get_similarity_score(user_ids, u2_id, users_features, probabilities)
         similar_user_ids[u2_id] = similarity_score
 
-        similar_users = sorted(similar_user_ids.items(), key=lambda x: x[1], reverse=True)
+    similar_users = sorted(similar_user_ids.items(), key=lambda x: x[1], reverse=True)
 
-        top_k = similar_users[0:k]
+    top_k = similar_users[0:k]
 
-        similar_users_norm = {}
-        for u, v in top_k:
-            similar_users_norm[u] = v 
+    similar_users_norm = {}
+    for u, v in top_k:
+        similar_users_norm[u] = v 
 
     return similar_users_norm
 
